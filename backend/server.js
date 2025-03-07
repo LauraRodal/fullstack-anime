@@ -22,12 +22,6 @@ app.get('/animes', async (req, res) => {
   res.json(animes);
 });
 
-app.get("/", (req, res) => {
-  const animes = await Anime.find();
-  res.json(animes);
-});
-
-
 app.post('/animes', async (req, res) => {
   const anime = new Anime({ name: req.body.name });
   await anime.save();
