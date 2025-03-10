@@ -1,9 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { User, Settings, BookOpen, Star } from 'lucide-react';
+import axios from 'axios';
+
+interface UserStats {
+  watching: number;
+  completed: number;
+  reviews: number;
+}
 
 const Profile = () => {
   const { user, profile } = useAuthStore();
+  const [stats, setStats] = useState<UserStats>({
+    watching: 0,
+    completed: 0,
+    reviews: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    // Solo carga estadísticas si el usuario está logueado
+    if (user) {
+      axios
+        .get(`http://localhost:5000/users/${user.id}/stats`)
+        .then((res) => {
+          setStats(res.data);
+        })
+        .catch((err) => {
+          console.error('Error al obtener las estadísticas:', err);
+        })
+        .finally(() => {
+          setLoadingStats(false);
+        });
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -43,7 +73,9 @@ const Profile = () => {
               Watching
             </h2>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            {loadingStats ? '...' : stats.watching}
+          </p>
         </div>
 
         <div className="card p-6">
@@ -53,7 +85,9 @@ const Profile = () => {
               Completed
             </h2>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            {loadingStats ? '...' : stats.completed}
+          </p>
         </div>
 
         <div className="card p-6">
@@ -63,7 +97,9 @@ const Profile = () => {
               Reviews
             </h2>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            {loadingStats ? '...' : stats.reviews}
+          </p>
         </div>
       </div>
 

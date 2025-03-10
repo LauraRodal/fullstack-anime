@@ -20,5 +20,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": [
+    "src",  // Aquí se incluyen los archivos en "src"
+    "vite-env.d.ts",  // Asegúrate de incluir el archivo de declaraciones de Vite
+    "supabase/**/*.ts" // Si tienes archivos TypeScript en la carpeta supabase, inclúyelos aquí
+  ]
 }

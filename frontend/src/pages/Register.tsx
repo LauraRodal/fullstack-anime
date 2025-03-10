@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../supabase/supabase';
+import axios from 'axios';
 
 const Register = () => {
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,14 +27,27 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Registrar usuario en Supabase
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
+      if (signUpError) throw signUpError;
 
-      if (error) throw error;
+      const supaUser = data.user;
+      if (!supaUser) {
+        throw new Error('No user returned from Supabase');
+      }
 
-      setUser(data.user);
+      // Guardar usuario en MongoDB a través del backend
+      await axios.post('http://localhost:5000/register-user', {
+        id_supabase: supaUser.id,
+        email: supaUser.email,
+        username,
+      });
+
+      // Actualizar el estado global y redirigir al perfil
+      setUser(supaUser);
       navigate('/profile');
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration');
@@ -58,6 +73,19 @@ const Register = () => {
         )}
 
         <form onSubmit={handleRegister} className="space-y-6">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="input"
+              required
+            />
+          </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email

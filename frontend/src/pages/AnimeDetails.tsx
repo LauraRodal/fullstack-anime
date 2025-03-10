@@ -1,34 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star, BookmarkPlus, Play, MessageSquare } from 'lucide-react';
+import axios from 'axios';
+
+interface Anime {
+  _id: string;
+  titulo: string;
+  image: string;
+  synopsis: string;
+  genero: string[];
+  rating: number;
+  status: string;
+  episodes: number;
+  year: number;
+  studio: string;
+}
+
+interface Review {
+  _id: string;
+  user: string;
+  rating: number;
+  content: string;
+  date: string;
+}
 
 const AnimeDetails = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const [anime, setAnime] = useState<Anime | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
-  // Placeholder data - will be replaced with Supabase query
-  const anime = {
-    id: '1',
-    title: 'Fullmetal Alchemist: Brotherhood',
-    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80&w=800',
-    synopsis: 'Two brothers search for a Philosopher\'s Stone after an attempt to revive their deceased mother goes awry.',
-    genres: ['Action', 'Adventure', 'Drama', 'Fantasy'],
-    rating: 9.5,
-    status: 'Completed',
-    episodes: 64,
-    year: 2009,
-    studio: 'Bones'
-  };
+  useEffect(() => {
+    // Obtener detalles del anime
+    const fetchAnime = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/animes/${id}`);
+        setAnime(res.data);
+      } catch (error) {
+        console.error("Error fetching anime details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const reviews = [
-    {
-      id: '1',
-      user: 'AnimeExpert',
-      rating: 9,
-      content: 'One of the best anime series ever made. The story is compelling, the characters are well-developed, and the animation is top-notch.',
-      date: '2024-02-15'
-    }
-  ];
+    // Obtener reseñas del anime
+    const fetchReviews = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/reviews?animeId=${id}`);
+        setReviews(res.data);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      }
+    };
+
+    fetchAnime();
+    fetchReviews();
+  }, [id]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!anime) {
+    return <div>No se encontró el anime.</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -36,12 +72,12 @@ const AnimeDetails = () => {
         <div className="md:flex">
           <img
             src={anime.image}
-            alt={anime.title}
+            alt={anime.titulo}
             className="w-full md:w-72 h-96 object-cover"
           />
           <div className="p-6 flex-1">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              {anime.title}
+              {anime.titulo}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               {anime.synopsis}
@@ -65,7 +101,7 @@ const AnimeDetails = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 mb-6">
-              {anime.genres.map((genre) => (
+              {anime.genero.map((genre) => (
                 <span
                   key={genre}
                   className="px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -102,6 +138,7 @@ const AnimeDetails = () => {
 
         {showReviewForm && (
           <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            {/* Aquí puedes agregar un formulario para crear una reseña */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Rating
@@ -131,27 +168,31 @@ const AnimeDetails = () => {
         )}
 
         <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {review.user}
-                  </span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <span className="text-gray-600 dark:text-gray-300">
-                      {review.rating}/10
+          {reviews.length > 0 ? (
+            reviews.map((review) => (
+              <div key={review._id} className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {review.user}
                     </span>
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {review.rating}/10
+                      </span>
+                    </div>
                   </div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {new Date(review.date).toLocaleDateString()}
+                  </span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(review.date).toLocaleDateString()}
-                </span>
+                <p className="text-gray-600 dark:text-gray-300">{review.content}</p>
               </div>
-              <p className="text-gray-600 dark:text-gray-300">{review.content}</p>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p>No reviews available.</p>
+          )}
         </div>
       </div>
     </div>
